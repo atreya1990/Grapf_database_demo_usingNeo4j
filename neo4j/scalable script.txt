@@ -1,0 +1,257 @@
+CREATE 
+(n:WINNER{name:"Jacobus Henricus van 't Hoff", year_catagory:"1901 - Chemestry", known_for: "", field:"", gender: "Male",place_of_birth:"Rotterdam, Netherlands",country_of_birth:"Netherlands",short_description:"Chemist",description:"  Jacobus Henricus van 't Hoff, Jr. (30 August 1852 â€“ 1 March 1911) was a Dutch physical and organic chemist and the first winner of the Nobel Prize in Chemistry. He is best known for his discoveries in chemical kinetics, chemical equilibrium, osmotic pressure, and stereochemistry. Van 't Hoff's work in these subjects helped found the discipline of physical chemistry as it is today ",year_of_birth:1852,age_of_nobel_win:49,universities:"",country_represented_for_nobel_prize:"Netherlands",image:"http://upload.wikimedia.org/wikipedia/commons/a/a4/Vant_Hoff.jpg",dbpedia_link:"http://dbpedia.org/page/Jacobus_Henricus_van_%27t_Hoff",profile:"http://en.wikipedia.org/wiki/Jacobus_Henricus_van_%27t_Hoff"})
+
+
+CREATE 
+(p:prizes{id:"1901 - Chemestry",year:1901, known_for: "",award:"Chemestry",winner: "Jacobus Henricus van 't Hoff",award_motivation:"in recognition of the extraordinary services he has rendered by the discovery of the laws of chemical dynamics and osmotic pressure in solutions"
+,link_on_official_website:"http://www.nobelprize.org/nobel_prizes/medicine/laureates/1901/"})
+
+
+match (n:WINNER),(p:prizes) where n.name="Jacobus Henricus van 't Hoff" and p.winner ="Jacobus Henricus van 't Hoff" create(n)-[won:won_the_prize]->(p)
+
+
+LOAD CSV WITH HEADERS FROM 'file:///winners.csv' AS row
+CREATE (n:Winner{name: row.name, year_catagory:row.http_upload_wikimedia_org_wikipedia_commons_6_6e_kailash_satyarthi_jpg
+,known_for:row.known_for, field:row.field, gender:row.gender,place_of_birth:row.place_of_birth,country_of_birth:row.country_of_birth,short_description:row.short_description,description:row.description,year_of_birth:toInteger(row.year_of_birth),age_of_nobel_win:toInteger(row.age_of_nobel_win),universities:row.universities,country_represented_for_nobel_prize:row.country_represented_for_nobel_prize,image:row.image,dbpedia_link:row.dbpedia_link,profile1:row.profile})
+
+
+LOAD CSV WITH HEADERS FROM 'file:///prizes.csv' AS row
+CREATE (p:prizes{id: row.id,
+ year:toInteger(row.year),
+ award:row.award, 
+ winner:row.winner,
+award_motivation:row.award_motivation
+})
+
+
+MATCH (n:Winner), (p:prizes)
+WHERE  n.name = p.winner
+MERGE (n)-[:HAS_WON_Prize]-(p)
+
+LOAD CSV WITH HEADERS FROM 'file:///years.csv' AS row
+CREATE (y1:years{year:toInteger(row.year),
+ average_age_of_laureates:toInteger(row.average_age_of_laureates),
+prizes_won_by_women:toInteger(row.prizes_won_by_women), prizes_won_by_men:toInteger(row.prizes_won_by_men), percentage_prizes_won_by_women:toInteger(row.percentage_prizes_won_by_women),
+percentage_prizes_won_by_men:toInteger(row.percentage_prizes_won_by_men),
+remove_average_female_winners_1901_2014:toInteger(row.remove_average_female_winners_1901_2014),
+remove_average_female_winners_1901_2014_2:toInteger(row.remove_average_female_winners_1901_2014_2)
+})
+
+LOAD CSV WITH HEADERS FROM 'file:///countries.csv' AS row
+CREATE (c:country{country:row.country,
+ number_of_prizes:toInteger(row.number_of_prizes),
+average_age_of_laureates:toInteger(row.average_age_of_laureates), prizes_won_by_women:toInteger(row.prizes_won_by_women), prizes_won_by_men:toInteger(row.prizes_won_by_men),
+percentage_prizes_won_by_women:toInteger(row.percentage_prizes_won_by_women),
+percentage_prizes_won_by_men:toInteger(row.percentage_prizes_won_by_men),
+remove_average_female_winners_all_countries:toInteger(row.remove_average_female_winners_all_countries),
+remove_average_female_winners_all_countries_2:toInteger(row.remove_average_female_winners_all_countries_2)
+})
+
+LOAD CSV WITH HEADERS FROM 'file:///award_categories.csv' AS row
+CREATE (a:award{category:row.category,
+ average_age_of_laureates:toInteger(row.average_age_of_laureates),
+prizes_won_by_women:toInteger(row.prizes_won_by_women), prizes_won_by_men:toInteger(row.prizes_won_by_men), percentage_prizes_won_by_women:toInteger(row.percentage_prizes_won_by_women),
+percentage_prizes_won_by_men:toInteger(row.percentage_prizes_won_by_men),
+remove_average_female_winners_all_countries:toInteger(row.remove_average_female_winners_all_countries),
+remove_average_female_winners_all_countries:toInteger(row.remove_average_female_winners_all_countries),
+remove_average_female_winners_all_countries_2:toInteger(row.remove_average_female_winners_all_countries_2)
+})
+
+MATCH ()-[r]->()
+RETURN type(r) as RelationshipType, count(r) as Count
+ORDER BY Count DESC
+
+MATCH (n:Winner)
+WHERE n.age_of_nobel_win > 40
+RETURN n.name, n.age_of_nobel_win
+
+MATCH (n:Winner)-[:HAS_WON_Prize]->(p:prizes)
+WITH n, count(p) AS num_friends
+WHERE num_friends > 10
+RETURN n.name, num_friends
+ORDER BY num_friends DESC
+LIMIT 10
+
+
+MATCH (n:Winner)
+RETURN SUM(n.age_of_nobel_win) AS total_age, AVG(n.age_of_nobel_win) AS avg_age, MIN(n.age_of_nobel_win) AS min_age, MAX(n.age_of_nobel_win) AS max_age
+
+
+MATCH (p:prizes)
+RETURN SUM(p.price) AS total_price, AVG(p.price) AS avg_price, MIN(p.price) AS min_price, MAX(p.price) AS max_price
+
+
+
+
+
+MATCH (a:award), (p:prizes)
+WHERE  a.category = p.award
+MERGE (p)-[:PRIZE_BELONGS_TO_THIS_CATEGORY]-(a)
+
+MATCH (y1:year), (p:prizes)
+WHERE  y1.year = p.year
+MERGE (p)-[:PRIZE_WON_IN_THIS_YEAR]-(y1)
+
+MATCH (n:Winner), (c:country)
+WHERE  n.country_represented_for_noble_prize = c.country_name
+MERGE (a)-[:PRIZE_BELONGS_TO_THIS_CATEGORY]-(p)
+
+CREATE (a:award{category:row.category,
+ average_age_of_laureates:toInteger(row.average_age_of_laureates),
+prizes_won_by_women:toInteger(row.prizes_won_by_women), prizes_won_by_men:toInteger(row.prizes_won_by_men), percentage_prizes_won_by_women:toInteger(row.percentage_prizes_won_by_women),
+percentage_prizes_won_by_men:toInteger(row.percentage_prizes_won_by_men),
+remove_average_female_winners_all_countries:toInteger(row.remove_average_female_winners_all_countries),
+remove_average_female_winners_all_countries:toInteger(row.remove_average_female_winners_all_countries),
+remove_average_female_winners_all_countries_2:toInteger(row.remove_average_female_winners_all_countries_2)
+})
+
+CREATE (a:award{category:Chemistry,average_age_of_laureates:58,prizes_won_by_women:5,prizes_won_by_men:204,percentage_prizes_won_by_women:2%,percentage_prizes_won_by_men:98%,remove_average_female_winners_all_countries:10,remove_average_female_winners_all_countries:0.1,remove_average_female_winners_all_countries_2:0.1})
+
+(a:award{category:Economics,average_age_of_laureates:68,prizes_won_by_women:1,prizes_won_by_men:88,percentage_prizes_won_by_women:1%,percentage_prizes_won_by_men:99%,remove_average_female_winners_all_countries:10,remove_average_female_winners_all_countries:0.1,remove_average_female_winners_all_countries_2:0.1})
+
+(a:award{category:Literature,average_age_of_laureates:65,prizes_won_by_women:15,prizes_won_by_men:109,percentage_prizes_won_by_women:12%,percentage_prizes_won_by_men:88%,remove_average_female_winners_all_countries:10,remove_average_female_winners_all_countries:0.1,remove_average_female_winners_all_countries_2:0.1})
+
+(a:award{category:Physiology,average_age_of_laureates:58,prizes_won_by_women:13,prizes_won_by_men:237,percentage_prizes_won_by_women:5%,percentage_prizes_won_by_men:95%,remove_average_female_winners_all_countries:10,remove_average_female_winners_all_countries:0.1,remove_average_female_winners_all_countries_2:0.1})
+
+(a:award{category:Peace,average_age_of_laureates:62,prizes_won_by_women:20,prizes_won_by_men:101,percentage_prizes_won_by_women17%,percentage_prizes_won_by_men:83%,remove_average_female_winners_all_countries:10,remove_average_female_winners_all_countries:0.1,remove_average_female_winners_all_countries_2:0.1})
+
+
+
+CREATE (c:country{country:row.country,
+ number_of_prizes:toInteger(row.number_of_prizes),
+average_age_of_laureates:toInteger(row.average_age_of_laureates), prizes_won_by_women:toInteger(row.prizes_won_by_women), prizes_won_by_men:toInteger(row.prizes_won_by_men),
+percentage_prizes_won_by_women:toInteger(row.percentage_prizes_won_by_women),
+percentage_prizes_won_by_men:toInteger(row.percentage_prizes_won_by_men),
+remove_average_female_winners_all_countries:toInteger(row.remove_average_female_winners_all_countries),
+remove_average_female_winners_all_countries_2:toInteger(row.remove_average_female_winners_all_countries_2)
+})
+
+CREATE 
+(c:country{country:Argentina,number_of_prizes:5,average_age_of_laureates:58,prizes_won_by_women:0,prizes_won_by_men:5,percentage_prizes_won_by_women:0%,percentage_prizes_won_by_men:100%,remove_average_female_winners_all_countries:0.8,remove_average_female_winners_all_countries_2:14.27%})
+
+(c:country{country:Australia,number_of_prizes:11,average_age_of_laureates:54,prizes_won_by_women:0,prizes_won_by_men:11,percentage_prizes_won_by_women:0%,percentage_prizes_won_by_men:100%,remove_average_female_winners_all_countries:0.8,remove_average_female_winners_all_countries_2:14.27%})
+
+(c:country{country:Austria,number_of_prizes:20,average_age_of_laureates:60,prizes_won_by_women:2,prizes_won_by_men:5,percentage_prizes_won_by_women:10%,percentage_prizes_won_by_men:90%,remove_average_female_winners_all_countries:0.8,remove_average_female_winners_all_countries_2:14.27%})
+
+(c:country{country:Azerbaijan,number_of_prizes:1,average_age_of_laureates:54,prizes_won_by_women:0,prizes_won_by_men:5,percentage_prizes_won_by_women:0%,percentage_prizes_won_by_men:100%,remove_average_female_winners_all_countries:0.8,remove_average_female_winners_all_countries_2:14.27%})
+
+(c:country{country:Bangladesh,number_of_prizes:1,average_age_of_laureates:66,prizes_won_by_women:0,prizes_won_by_men:5,percentage_prizes_won_by_women:0%,percentage_prizes_won_by_men:100%,remove_average_female_winners_all_countries:0.8,remove_average_female_winners_all_countries_2:14.27%})
+
+
+
+CREATE (y1:years{year:toInteger(row.year),
+ average_age_of_laureates:toInteger(row.average_age_of_laureates),
+prizes_won_by_women:toInteger(row.prizes_won_by_women), prizes_won_by_men:toInteger(row.prizes_won_by_men), percentage_prizes_won_by_women:toInteger(row.percentage_prizes_won_by_women),
+percentage_prizes_won_by_men:toInteger(row.percentage_prizes_won_by_men),
+remove_average_female_winners_1901_2014:toInteger(row.remove_average_female_winners_1901_2014),
+remove_average_female_winners_1901_2014_2:toInteger(row.remove_average_female_winners_1901_2014_2)
+})
+
+CREATE 
+(y1:years{year:1901,average_age_of_laureates:61,prizes_won_by_women:0, prizes_won_by_men:6, percentage_prizes_won_by_women:0%,percentage_prizes_won_by_men:100%,remove_average_female_winners_1901_2014:0.4,remove_average_female_winners_1901_2014_2:5%})
+
+(y1:years{year:1902,average_age_of_laureates:56,prizes_won_by_women:0, prizes_won_by_men:7, percentage_prizes_won_by_women:0%,percentage_prizes_won_by_men:100%,remove_average_female_winners_1901_2014:0.4,remove_average_female_winners_1901_2014_2:5%})
+
+(y1:years{year:1903,average_age_of_laureates:52,prizes_won_by_women:1, prizes_won_by_men:6, percentage_prizes_won_by_women:14%,percentage_prizes_won_by_men:86%,remove_average_female_winners_1901_2014:0.4,remove_average_female_winners_1901_2014_2:5%})
+
+(y1:years{year:1904,average_age_of_laureates:63,prizes_won_by_women:0, prizes_won_by_men:5, percentage_prizes_won_by_women:0%,percentage_prizes_won_by_men:100%,remove_average_female_winners_1901_2014:0.4,remove_average_female_winners_1901_2014_2:5%})
+
+(y1:years{year:1905,average_age_of_laureates:59,prizes_won_by_women:1, prizes_won_by_men:4, percentage_prizes_won_by_women:20%,percentage_prizes_won_by_men:80%,remove_average_female_winners_1901_2014:0.4,remove_average_female_winners_1901_2014_2:5%})
+
+
+CREATE (p:prizes{id: row.id,
+ year:toInteger(row.year),
+ award:row.award, 
+ winner:row.winner,
+award_motivation:row.award_motivation
+})
+
+CREATE 
+(p:prizes{id:1901 - Medicine / Physiology,
+ Year:1901,award:Medicine / Physiology,winner:Emil Adolf von Behring,award_motivation:"for his work on serum therapy, especially its application against diphtheria, by which he has opened a new road in the domain of medical science and thereby placed in the hands of the physician a victorious weapon against illness and deaths”,Link_on_official_website:”http://www.nobelprize.org/nobel_prizes/medicine/laureates/1901/“})
+
+(p:prizes{id:1901 - Chemestry,Year:1901,award:Chemestry,winner:Jacobus Henricus van 't Hoff,award_motivation:"in recognition of the extraordinary services he has rendered by the discovery of the laws of chemical dynamics and osmotic pressure in solutions",Link_on_official_website:”http://www.nobelprize.org/nobel_prizes/chemistry/laureates/1901/“})
+
+(p:prizes{id:1901 - Literature,Year:1901,award:Literature,winner:Sully Prudhomme,award_motivation:"in special recognition of his poetic composition, which gives evidence of lofty idealism, artistic perfection and a rare combination of the qualities of both heart and intellect",Link_on_official_website:”http://www.nobelprize.org/nobel_prizes/literature/laureates/1901/“})
+
+(p:prizes{id:1901 - Physics,Year:1901,award:Physics,winner:Wilhelm Röntgen,award_motivation:"in recognition of the extraordinary services he has rendered by the discovery of the remarkable rays subsequently named after him",Link_on_official_website:”http://www.nobelprize.org/nobel_prizes/physics/laureates/1901/“})
+
+(p:prizes{id:1902 - Physics,
+ Year:1902,award:Physics,winner:Hendrik Lorentz, Pieter Zeeman,award_motivation:"in recognition of the extraordinary service they rendered by their researches into the influence of magnetism upon radiation phenomena",Link_on_official_website:”http://www.nobelprize.org/nobel_prizes/physics/laureates/1902/“})
+
+
+CREATE
+(n:WINNER{name:"Jacobus Henricus van 't Hoff", year_catagory:"1901 - Chemestry", known_for: "", field:"", gender: "Male",place_of_birth:"Rotterdam, Netherlands",country_of_birth:"Netherlands",short_description:"Chemist",description:"  Jacobus Henricus van 't Hoff, Jr. (30 August 1852 â€“ 1 March 1911) was a Dutch physical and organic chemist and the first winner of the Nobel Prize in Chemistry. He is best known for his discoveries in chemical kinetics, chemical equilibrium, osmotic pressure, and stereochemistry. Van 't Hoff's work in these subjects helped found the discipline of physical chemistry as it is today ",year_of_birth:1852,age_of_nobel_win:49,universities:"",country_represented_for_nobel_prize:"Netherlands",image:"http://upload.wikimedia.org/wikipedia/commons/a/a4/Vant_Hoff.jpg",dbpedia_link:"http://dbpedia.org/page/Jacobus_Henricus_van_%27t_Hoff",profile:"http://en.wikipedia.org/wiki/Jacobus_Henricus_van_%27t_Hoff"})
+
+
+CREATE
+(n:WINNER{name:"Sully Prudhomme", year_catagory:"1901 - Lliterature, known_for: "", field:"", gender: "Male",place_of_birth:"Paris, France",country_of_birth:”France”,short_description:"French Poet And Essayist",description:"René François Armand (Sully) Prudhomme ( French: [syli pʀydɔm]; 16 March 1839 – 6 September 1907) was a French poet and essayist, and was the first ever winner of the Nobel Prize in Literature, in 1901.",year_of_birth:1839,age_of_nobel_win:62,universities:"",country_represented_for_nobel_prize:”France”,image:"http://upload.wikimedia.org/wikipedia/commons/a/a4/Sully_Prudhomme%2C_Ren%C3%A9-Fran%C3%A7ois-Armand%2C_BNF_Gallica.jpg",dbpedia_link:"http://dbpedia.org/page/Sully_Prudhomme",profile:"http://en.wikipedia.org/wiki/Sully_Prudhomme"})
+
+
+CREATE
+(n:WINNER{name:"Emil Adolf von Behring", year_catagory:"1901 - Medicine / Physiology", known_for: "Diphtheria antitoxin/serum", field:"", gender: "Male",place_of_birth:"Ławice, Germany”,country_of_birth:"Germany",short_description:"German Physiologist",description:"Emil Adolf von Behring (15 March 1854 – 31 March 1917) was a German physiologist who received the 1901 Nobel Prize in Physiology or Medicine, the first one awarded.",year_of_birth:1854,age_of_nobel_win:47,universities:"Germany",country_represented_for_nobel_prize:"http://upload.wikimedia.org/wikipedia/commons/5/52/Emil_von_Behring_sitzend.jpg",image:"http://dbpedia.org/page/Emil_Adolf_von_Behring",dbpedia_link:"",profile:"http://en.wikipedia.org/wiki/Emil_Adolf_von_Behring"})
+
+
+CREATE
+(n:WINNER{name:"Frédéric Passy", year_catagory:"1901 - Peace, known_for: "", field:"", gender: "Male",place_of_birth:"Paris, France",country_of_birth:"France",short_description:"French Economist And Statesman",description:"Frédéric Passy (May 20, 1822 – June 12, 1912) was a French economist and a joint winner (together with Henry Dunant ) of the first Nobel Peace Prize awarded in 1901.",year_of_birth:1822,age_of_nobel_win:79,universities:"France",country_represented_for_nobel_prize:"http://upload.wikimedia.org/wikipedia/commons/3/38/Frederic_Passy.jpg",image:"http://dbpedia.org/page/Fr%C3%A9d%C3%A9ric_Passy",dbpedia_link:"",profile:"http://en.wikipedia.org/wiki/Fr%C3%A9d%C3%A9ric_Passy"})
+
+
+CREATE
+(n:WINNER{name:"Henry Dunant", year_catagory:"1901 - Peace", known_for: "Founder of the Red Cross", field:"", gender: "Male",place_of_birth:"Geneva, Switzerland",country_of_birth:"Switzerland",short_description:"Inspiration For Red Cross",description:"Jean Henri Dunant (8 May 1828 – 30 October 1910), also known as Henry Dunant, was a Swiss businessman and social activist. During a business trip in 1859, he was witness to the aftermath of the Battle of Solferino in modern-day Italy. He recorded his memories and experiences in the book A Memory of Solferino which inspired the creation of the International Committee of the Red Cross (ICRC) in 1863. The 1864 Geneva Convention was based on Dunant's ideas. In 1901 he received the first Nobel Peace Prize together with Frédéric Passy.",year_of_birth:1828,age_of_nobel_win:73,universities:"France, Switzerland",country_represented_for_nobel_prize:"http://upload.wikimedia.org/wikipedia/commons/3/38/Henry_Dunant-young.jpg",image:"",dbpedia_link:"http://dbpedia.org/page/Henry_Dunant",profile:"http://en.wikipedia.org/wiki/Henry_Dunant"})
+
+
+
+MATCH (a:award), (p:prizes)
+WHERE  a.category = p.award
+MERGE (p)-[:PRIZE_BELONGS_TO_THIS_CATEGORY]->(a)
+
+(Chemistry)-[:PRIZE_BELONGS_TO_THIS_CATEGORY]->(Chemistry),
+(Peace)-[:PRIZE_BELONGS_TO_THIS_CATEGORY]->(Peace),
+(Literature)-[:PRIZE_BELONGS_TO_THIS_CATEGORY]->(Literature),
+(Medicine / Physiology)-[:PRIZE_BELONGS_TO_THIS_CATEGORY]->(Medicine / Physiology),
+(Physics)-[:PRIZE_BELONGS_TO_THIS_CATEGORY]->(Physics),
+
+MATCH (y1), (p)
+WHERE y1.year = p.year
+MERGE (p)-[:has_won_prize_in_year]-(y1)
+
+(1901)-[:has_won_prize_in_year]->(1901)
+(1902)-[:as_won_prize_in_year]->(1902)
+(1903)-[:has_won_prize_in_year]->(1903)
+(1904)-[:has_won_prize_in_year]->(1904)
+(1905)-[:has_won_prize_in_year]->(1905)
+
+
+MATCH (n:Winner), (p:prizes)
+WHERE  n.name = p.winner
+MERGE (n)-[:HAS_WON_Prize]-(p)
+
+(Jacobus Henricus van 't Hoff)-[:HAS_WON_Prize]->(Jacobus Henricus van 't Hoff)
+(Sully Prudhomme)-[:HAS_WON_Prize]->(Sully Prudhomme)
+(Emil Adolf von Behring)-[:HAS_WON_Prize]->(Emil Adolf von Behring)
+(Frédéric Passy)-[:HAS_WON_Prize]->(Frédéric Passy)
+(Henry Dunant-[:HAS_WON_Prize]->Henry Dunant)
+
+match (n:WINNER),(p:prizes) where n.name="Jacobus Henricus van 't Hoff" and p.winner ="Jacobus Henricus van 't Hoff" create(n)-[won:won_the_prize]->(p)
+
+(Jacobus Henricus van 't Hoff)-[won:won_the_prize]->(Jacobus Henricus van 't Hoff)
+(Sully Prudhomme)-[won:won_the_prize]->(Sully Prudhomme)
+(Emil Adolf von Behring)-[won:won_the_prize]->(Emil Adolf von Behring)
+(Frédéric Passy)-[won:won_the_prize]->(Frédéric Passy)
+(Henry Dunant-[won:won_the_prize]->Henry Dunant)
+
+MATCH (y1:years), (p:prizes)
+WHERE y1.year = p.year
+CREATE (p)-[:PRIZE_WON_IN_THIS_YEAR]->(y1)
+
+
+(1901)-[:PRIZE_WON_IN_THIS_YEAR]->(1901)
+(1901)-[:PRIZE_WON_IN_THIS_YEAR]->(1901)
+(1902)-[:PRIZE_WON_IN_THIS_YEAR]->(1902)
+(1902)-[:PRIZE_WON_IN_THIS_YEAR]->(1902)
+(1903)-[:PRIZE_WON_IN_THIS_YEAR]->(1903)
+
+
+
+
+
